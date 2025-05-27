@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ArcGIS defaultAssembly="TraceNetwork.dll"
+        defaultNamespace="TraceNetwork"
+        xmlns="http://schemas.esri.com/DADF/Registry"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
+
+	<AddInInfo id="{9e722d5c-1c43-4b94-977f-fcf71ef17cd2}" version="1.0" desktopVersion="3.2.49743">
+		<Name>TraceNetwork</Name>
+		<Description>TraceNetwork description</Description>
+		<Image>Images\AddinTraceUpstream32.png</Image>
+		<Author>ELNN</Author>
+		<Company>Ramboll</Company>
+		<Date>5/21/2025 2:01:21 PM</Date>
+		<Subject>Framework</Subject>
+	</AddInInfo>
+
+	<dockpane id="TraceNetwork_MyDockpane" className="MyDockpane" loadOnClick="true" autoShow="false">
+		<tooltip heading="My Dockpane Tooltip">A useful pane for TraceNetwork</tooltip>
+		<caption>My Dockpane Title</caption>
+	</dockpane>
+	
+	<modules>
+		<insertModule id="TraceNetwork" className="Module1" autoLoad="false" caption="Module1">
+
+			<tabs>
+				<tab id="trace_network_Tab1" caption="Trace Network">
+					<group refID="trace_network_Group1"/>
+				</tab>
+			</tabs>
+
+			<groups>
+				<group id="trace_network_Group1" caption="Trace Network" appearsOnAddInTab="true">
+					<control refID="trace_network_GroupLayerComboBox" />
+					<control refID="trace_network_CatchmentLayerComboBox" />
+					<control refID="trace_network_TraceUpstreamTool" />
+					<control refID="trace_network_SummarizeCatchmentsButton" />
+					<control refID="MyAddin_HelpButton" />
+				</group>
+			</groups>
+
+			<controls>
+				<tool id="trace_network_TraceUpstreamTool"
+						className="TraceUpstreamTool"
+						loadOnClick="true"
+						largeImage="Images/AddinTraceUpstream32.png"
+						caption="Trace Upstream"
+						tooltip="Click on the map to trace upstream from nearest node"
+						group="trace_network_Group1"
+						showText="true"
+						enabled="false"/>
+				<comboBox id="trace_network_GroupLayerComboBox"
+						className="GroupLayerComboBox"
+						loadOnClick="true"
+						caption="GroupLayer"
+						tooltip="Select a group layer from the current map"
+						group="trace_network_Group1"
+						sizeString="JYL_061_befae"
+						editable="false" />
+				<comboBox id="trace_network_CatchmentLayerComboBox"
+						className="CatchmentLayerComboBox"
+						loadOnClick="true"
+						caption="Catchment Layer"
+						tooltip="Select a Catchment layer from the current map"
+						group="trace_network_Group1"
+						sizeString="JYL_061\Delopland"
+						editable="false" />
+				<button id="trace_network_SummarizeCatchmentsButton"
+					className="SummarizeCatchmentsButton"
+					loadOnClick="true"
+					smallImage="Images\AddinCadastre16.png"
+					largeImage="Images\AddinCadastre32.png"
+					caption="Summarize Catchments"
+					group="trace_network_Group1"
+					showText="true"/>
+				<button id="trace_network_HelpButton"
+						className="HelpButton"
+						loadOnClick="true"
+						largeImage="Images/Help32.png"
+						tooltip="Open help documentation"
+						displayName="Help" />
+			</controls>
+
+			
+		</insertModule>
+	</modules>
+
+</ArcGIS>
