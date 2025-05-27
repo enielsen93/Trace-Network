@@ -35,13 +35,32 @@
 
 ---
 
-### Why this works
+## How to Use
 
-- Most users prefer **simple “double-click install”** steps.
-- Including the manual folder path is a lifesaver for those who want more control or have ArcGIS Pro open.
-- Clear, bullet-point format makes it skimmable and easy to follow.
-- Link to releases and official docs adds credibility and helps with troubleshooting.
+**Trace Network** is an ArcGIS Pro add-in designed to trace a MIKE+ Sewer Network.  
+It is intended to be used **with** the `02) Display MIKE+.pyt` tool available here:  
+[https://github.com/enielsen93/MIKE-Urban-Tools](https://github.com/enielsen93/MIKE-Urban-Tools)
 
 ---
 
-Want me to draft you a full README template including this section? Or help with how to automate your release packaging on GitHub?
+### To Trace Network
+
+1. Run **2.3 Display MIKE+** in ArcGIS Pro.
+2. Open the **Trace Network** dockpane from the Ribbon.
+3. Select the **Group Layer** under *GroupLayer*.
+4. Choose **Trace Upstream**.
+5. Click on the map near a node — the add-in will select all nodes, links, and catchments upstream of the selected node.
+
+---
+
+### To Summarize Catchments
+
+1. Select catchments in ArcGIS Pro.  
+   > **Important:** There is a limit to the number of catchments you can select.
+2. Open the **Trace Network** dockpane in the Ribbon.
+3. Click **Summarize Catchments**.
+
+A message box will appear displaying the **total area**, **total impervious area**, and **total reduced area** of all selected catchments.
+
+---
+
