@@ -24,7 +24,7 @@
 
 4. **Use the Add-In**
 
-   The add-in will appear under the **Add-In** tab or wherever you placed your custom buttons/toolbars.
+   The add-in will appear under the **Trace Network** tab or wherever you placed your custom buttons/toolbars.
 
 ---
 
