@@ -18,6 +18,12 @@ namespace TraceNetwork
     /// </summary>
     internal class CatchmentLayerComboBox : ComboBox
     {
+        public static CatchmentLayerComboBox Current { get; private set; }
+
+        public CatchmentLayerComboBox()
+        {
+            Current = this;
+        }
         // Public accessor for the selected pair
         public static (GroupLayer Group, FeatureLayer Feature) SelectedCatchment { get; private set; }
         public static string CatchmentLayerCaption;
@@ -100,6 +106,11 @@ namespace TraceNetwork
                     CollectGroupLayers(child, output);
             }
         }
+        public void RefreshSelection()
+        {
+            OnSelectionChange(SelectedItem);
+        }
+
 
         // Optional: deeper feature recursion if you have nested groups inside groups
         //private void CollectFeatureLayersRecursive(Layer lyr, List<LayerPair> output, GroupLayer parentGroup)

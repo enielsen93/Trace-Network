@@ -50,9 +50,11 @@ namespace TraceNetwork
                         .Where(link => upstreamNodeIds.Contains(link.ToId))
                         .ToList();
 
+
+
                     if (matchingLinks.Count > 0)
                     {
-                        var linkClause = $"tonodeid IN ({string.Join(",", upstreamNodeIds.Select(id => $"'{id}'"))})";
+                        var linkClause = $"{NetworkService.ToNodeField} IN ({string.Join(",", upstreamNodeIds.Select(id => $"'{id}'"))})";
                         var linkFilter = new QueryFilter { WhereClause = linkClause };
                         GroupLayerComboBox.msm_Link.Select(linkFilter, SelectionCombinationMethod.Add);
                     }

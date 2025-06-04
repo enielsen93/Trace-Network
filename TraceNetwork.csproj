@@ -15,6 +15,7 @@
     <None Remove="Images\AddinTraceUpstream16.png" />
     <None Remove="Images\AddinTraceUpstream32.png" />
     <None Remove="Images\AddinTraceUpstreamSmall.png" />
+    <None Remove="Images\reload.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Images\AddinCadastre16.png" />
@@ -29,6 +30,7 @@
     <Content Include="DarkImages\AddInDesktop16.png" />
     <Content Include="DarkImages\AddInDesktop32.png" />
     <Content Include="Images\AddinTraceUpstream32.png" />
+    <Content Include="Images\reload.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.5" />

@@ -14,6 +14,13 @@ namespace TraceNetwork
 { 
     public class GroupLayerComboBox : ComboBox
     {
+        public static GroupLayerComboBox Current { get; private set; }
+
+        public GroupLayerComboBox()
+        {
+            Current = this;
+        }
+
         private readonly List<LayerItem> _groupLayers = new();
         public static FeatureLayer msm_Node = null;
         public static FeatureLayer msm_Link = null;
@@ -144,6 +151,11 @@ namespace TraceNetwork
         {
             public string Name { get; set; }
             public GroupLayer Layer { get; set; }
+        }
+        public void RefreshSelection()
+        {
+            // Trigger the OnSelChange logic with current selected item
+            OnSelectionChange(SelectedItem);
         }
     }
 }

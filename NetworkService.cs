@@ -14,8 +14,6 @@ using ArcGIS.Desktop.Mapping;  // for FeatureLayer
 using Microsoft.Data.Sqlite;
 using SQLitePCL;
 
-
-
 namespace TraceNetwork.Network
 {
     public static class NetworkService
@@ -23,6 +21,8 @@ namespace TraceNetwork.Network
         public static Dictionary<string, Node> Nodes { get; private set; }
         public static Dictionary<string, Catchment> Catchments { get; private set; }
         public static List<Link> Links { get; private set; }
+        public static string FromNodeField { get; private set; }
+        public static string ToNodeField{ get; private set; }
 
         public static Table CatchmentTable { get; private set; }
 
@@ -150,7 +150,17 @@ namespace TraceNetwork.Network
 
             if (nodeLayer != null)
             {
+
                 var nodeTable = nodeLayer.GetTable();
+                string geometryField = null;
+                var fieldNames = nodeLayer.GetFieldDescriptions().Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                if (fieldNames.Contains("geometry"))
+                    geometryField = "geometry";
+                else if (fieldNames.Contains("shape"))
+                    geometryField = "shape";
+                else
+                    throw new Exception("No suitable geometry field ('geometry' or 'shape') found.");
+
                 // Read nodes
                 using (var nodeCursor = nodeTable.Search())
                 {
@@ -159,7 +169,8 @@ namespace TraceNetwork.Network
                         using (var row = nodeCursor.Current)
                         {
                             var id = row["muid"]?.ToString();
-                            var geom = row["geometry"] as MapPoint;
+                            var geom = row[geometryField] as MapPoint;
+
                             if (!string.IsNullOrEmpty(id) && geom != null)
                                 Nodes[id] = new Node(id, geom);
                         }
@@ -172,15 +183,35 @@ namespace TraceNetwork.Network
             if (linkLayer != null)
             {
                 var linkTable = linkLayer.GetTable();
+                var fieldNames = linkLayer.GetFieldDescriptions().Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                if (fieldNames.Contains("fromnodeid"))
+                {
+                    FromNodeField = "fromnodeid";
+                    ToNodeField = "tonodeid";
+                }
+                else
+                {
+                    FromNodeField = "fromnode";
+                    ToNodeField = "tonode";
+                }
+
+                string geometryField = null;
+                if (fieldNames.Contains("geometry"))
+                    geometryField = "geometry";
+                else if (fieldNames.Contains("shape"))
+                    geometryField = "shape";
+                else
+                    throw new Exception("No suitable geometry field ('geometry' or 'shape') found.");
+
                 using (var linkCursor = linkTable.Search())
                 {
                     while (linkCursor.MoveNext())
                     {
                         using (var row = linkCursor.Current)
                         {
-                            var fromId = row["fromnodeid"]?.ToString();
-                            var toId = row["tonodeid"]?.ToString();
-                            var geom = row["geometry"] as Polyline;
+                            var fromId = row[FromNodeField]?.ToString();
+                            var toId = row[ToNodeField]?.ToString();
+                            var geom = row[geometryField] as Polyline;
 
                             if (fromId != null && toId != null
                                 && Nodes.TryGetValue(fromId, out var fromNode)

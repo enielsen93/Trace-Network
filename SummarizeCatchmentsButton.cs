@@ -116,38 +116,42 @@ namespace TraceNetwork
 
 
                     // Read msm_Catchments
-                    var catchmentSelection = selectedCatchments.GetSelection();
-                    using (var catchmentCursor = catchmentSelection.Search(null, true))
+                    var selectedIDs = selectedCatchments.GetSelection().GetObjectIDs().ToList();
+;
+                    using (var catchmentCursor = selectedCatchments.Search(null))
                     {
                         while (catchmentCursor.MoveNext())
                         {
                             using (var row = (Feature)catchmentCursor.Current)
                             {
                                 var id = row["muid"]?.ToString();
-                                Catchments[id] = new Catchment() { Muid = id };
-
-                                var geometry = row.GetShape() as Polygon; // Or appropriate geometry type
-                                double geometry_area = geometry?.Area ?? 0;
-
-                                // Calculate area in map units (e.g. square meters)
-                                float area = (row["area"] != DBNull.Value && row["area"] != null)
-                                    ? Convert.ToSingle(row["area"])
-                                    : (float)geometry_area;
-
-                                Catchments[id].Area = area;
-                                Catchments[id].Persons = Convert.IsDBNull(row["Persons"]) ? 0.0 : Convert.ToDouble(row["Persons"]);
-                                Catchments[id].Imperviousness = (double)row["modelaimparea"] * 100;
-                                Catchments[id].UseLocalParameters = Convert.ToInt32(row["modelalocalno"]) == 2;
-                                if (Catchments[id].UseLocalParameters)
+                                if (selectedIDs.Contains(row.GetObjectID()))
                                 {
-                                    Catchments[id].ConcentrationTime = (double)row["modelaconctime"];
-                                    Catchments[id].ReductionFactor = (double)row["modelarfactor"];
-                                }
-                                else
-                                {
-                                    Catchments[id].Modelaparaid = (string)row["modelaparaid"];
-                                    Catchments[id].ConcentrationTime = HParATable[Catchments[id].Modelaparaid].Conctime;
-                                    Catchments[id].ReductionFactor = HParATable[Catchments[id].Modelaparaid].Redfactor;
+                                    Catchments[id] = new Catchment() { Muid = id };
+
+                                    var geometry = row.GetShape() as Polygon; // Or appropriate geometry type
+                                    double geometry_area = geometry?.Area ?? 0;
+
+                                    // Calculate area in map units (e.g. square meters)
+                                    float area = (row["area"] != DBNull.Value && row["area"] != null)
+                                        ? Convert.ToSingle(row["area"])
+                                        : (float)geometry_area;
+
+                                    Catchments[id].Area = area;
+                                    Catchments[id].Persons = Convert.IsDBNull(row["Persons"]) ? 0.0 : Convert.ToDouble(row["Persons"]);
+                                    Catchments[id].Imperviousness = (double)row["modelaimparea"] * 100;
+                                    Catchments[id].UseLocalParameters = Convert.ToInt32(row["modelalocalno"]) == 2;
+                                    if (Catchments[id].UseLocalParameters)
+                                    {
+                                        Catchments[id].ConcentrationTime = (double)row["modelaconctime"];
+                                        Catchments[id].ReductionFactor = (double)row["modelarfactor"];
+                                    }
+                                    else
+                                    {
+                                        Catchments[id].Modelaparaid = (string)row["modelaparaid"];
+                                        Catchments[id].ConcentrationTime = HParATable[Catchments[id].Modelaparaid].Conctime;
+                                        Catchments[id].ReductionFactor = HParATable[Catchments[id].Modelaparaid].Redfactor;
+                                    }
                                 }
                             }
                         }
