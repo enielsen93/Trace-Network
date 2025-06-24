@@ -25,12 +25,12 @@ namespace TraceNetwork
         public static Dictionary<string, Catchment> Catchments { get; private set; }
         protected override async void OnClick()
         {
-            var caption = CatchmentLayerComboBox.CatchmentLayerCaption;
+            //var caption = CatchmentLayerComboBox.CatchmentLayerCaption;
             var muids = new List<string>();
             await QueuedTask.Run(() =>
             {
+                string caption = CatchmentLayerComboBox.Current.SelectedItem.ToString();
                 var map = MapView.Active?.Map;
-
 
                 bool found = false;
                 FeatureLayer selectedCatchments = null;
@@ -71,8 +71,6 @@ namespace TraceNetwork
                 }
 
 
-
-                Debug.WriteLine("BOB");
                 Catchments = new Dictionary<string, Catchment>();
                 Dictionary<string, HPara> HParATable = new Dictionary<string, HPara>();
 

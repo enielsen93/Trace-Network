@@ -8,23 +8,28 @@ using ArcGIS.Desktop.Framework.Contracts;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
 using ArcGIS.Desktop.Mapping;
 using Microsoft.Data.Sqlite;
+using ArcGIS.Desktop.Framework;
+using ArcGIS.Desktop.Framework.Contracts;
 using TraceNetwork.Network;
 
 namespace TraceNetwork
 { 
+    public static class Layers
+    {
+        public static FeatureLayer msm_Node = null;
+        public static FeatureLayer msm_Link = null;
+        public static FeatureLayer msm_Catchment = null;
+    }
     public class GroupLayerComboBox : ComboBox
     {
         public static GroupLayerComboBox Current { get; private set; }
+        private readonly List<LayerItem> _groupLayers = new();
 
         public GroupLayerComboBox()
         {
             Current = this;
         }
 
-        private readonly List<LayerItem> _groupLayers = new();
-        public static FeatureLayer msm_Node = null;
-        public static FeatureLayer msm_Link = null;
-        public static FeatureLayer msm_Catchment = null;
 
 
         protected override void OnDropDownOpened()
@@ -66,7 +71,7 @@ namespace TraceNetwork
         public void SummarizeSelectedCatchments()
         {
             var muids = new List<string>();
-            var CatchmentLayer = msm_Catchment;
+            var CatchmentLayer = Layers.msm_Catchment;
 
             // Get the selection from the map or from the table itself
             var selection = CatchmentLayer.GetSelection();
@@ -92,36 +97,38 @@ namespace TraceNetwork
                     .OfType<FeatureLayer>()
                     .ToList();
 
-                msm_Node = allLayers.FirstOrDefault(l =>
+                Layers.msm_Node = allLayers.FirstOrDefault(l =>
                     NameMatch(l.Name, "msm_Node", "Manhole", "Brønd"));
 
-                msm_Link = allLayers.FirstOrDefault(l =>
+                Layers.msm_Link = allLayers.FirstOrDefault(l =>
                     NameMatch(l.Name, "msm_Link", "Ledning", "Pipe"));
 
-                msm_Catchment = allLayers.FirstOrDefault(l =>
-                    NameMatch(l.Name, "msm_Catchment", "Delopland", "Catchment"));
+                Layers.msm_Catchment = allLayers.FirstOrDefault(l =>
+                    NameMatch(l.Name, "msm_Catchment", "ms_Catchent", "Delopland", "Catchment"));
 
-                Debug.WriteLine(msm_Node != null
-                    ? $"✅ Found msm_Node: {msm_Node.Name}"
+                Debug.WriteLine(Layers.msm_Node != null
+                    ? $"✅ Found msm_Node: {Layers.msm_Node.Name}"
                     : "❌ No msm_Node found.");
 
-                Debug.WriteLine(msm_Link != null
-                    ? $"✅ Found msm_Link: {msm_Link.Name}"
+                Debug.WriteLine(Layers.msm_Link != null
+                    ? $"✅ Found msm_Link: {Layers.msm_Link.Name}"
                     : "❌ No msm_Link found.");
 
-                Debug.WriteLine(msm_Catchment != null
-                    ? $"✅ Found msm_Catchment: {msm_Catchment.Name}"
+                Debug.WriteLine(Layers.msm_Catchment != null
+                    ? $"✅ Found msm_Catchment: {Layers.msm_Catchment.Name}"
                     : "❌ No msm_Catchment found.");
 
-                if (msm_Catchment != null && CatchmentLayerComboBox.CatchmentLayerCaption == null)
+                if (Layers.msm_Catchment != null && CatchmentLayerComboBox.Current.SelectedItem == null)
                 {
-                    CatchmentLayerComboBox.CatchmentLayerCaption = selectedGroup.Name + "\\" + msm_Catchment.Name;
+                    CatchmentLayerComboBox.Current.SelectedItem = selectedGroup.Name + "\\" + Layers.msm_Catchment.Name;
+                    //CatchmentLayerComboBox.CatchmentLayerCaption = selectedGroup.Name + "\\" + Layers.msm_Catchment.Name;
 
 
                 }
+                NetworkService.BuildNetwork(Layers.msm_Node, Layers.msm_Link, Layers.msm_Catchment);
 
-                // To build:
-                NetworkService.BuildNetwork(msm_Node, msm_Link, msm_Catchment);
+                SearchBox.Current.Enabled = true;
+
 
             });
         }
@@ -157,6 +164,16 @@ namespace TraceNetwork
             // Trigger the OnSelChange logic with current selected item
             OnSelectionChange(SelectedItem);
         }
+
+        public void SelectFeatures(QueryFilter query)
+        {
+
+            Layers.msm_Node.Select(query, SelectionCombinationMethod.New);
+            Layers.msm_Link.Select(query, SelectionCombinationMethod.Add);
+            Layers.msm_Catchment.Select(query, SelectionCombinationMethod.Add);
+
+        }
+
     }
 }
 

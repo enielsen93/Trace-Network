@@ -42,7 +42,7 @@ namespace TraceNetwork
                     Debug.WriteLine($"Found {upstream.Count} upstream nodes from {nearest.Id}");
                     var whereClause = $"MUID IN ({string.Join(",", upstream.Select(n => $"'{n.Id}'"))})";
                     var filter = new QueryFilter { WhereClause = whereClause };
-                    GroupLayerComboBox.msm_Node.Select(filter, SelectionCombinationMethod.Add);
+                    Layers.msm_Node.Select(filter, SelectionCombinationMethod.Add);
 
                     // Select links where fromNode or toNode is in the upstream set
                     var upstreamNodeIds = upstream.Select(n => n.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -56,7 +56,7 @@ namespace TraceNetwork
                     {
                         var linkClause = $"{NetworkService.ToNodeField} IN ({string.Join(",", upstreamNodeIds.Select(id => $"'{id}'"))})";
                         var linkFilter = new QueryFilter { WhereClause = linkClause };
-                        GroupLayerComboBox.msm_Link.Select(linkFilter, SelectionCombinationMethod.Add);
+                        Layers.msm_Link.Select(linkFilter, SelectionCombinationMethod.Add);
                     }
                     else
                     {
@@ -69,11 +69,11 @@ namespace TraceNetwork
                     var keys = matchingCatchments.Select(kvp => kvp.Value.Muid)
                         .ToList();
 
-                    if (matchingLinks.Count > 0 && GroupLayerComboBox.msm_Catchment != null)
+                    if (matchingLinks.Count > 0 && Layers.msm_Catchment != null)
                     {
                         var catchmentClause = $"MUID IN ({string.Join(", ", keys.Select(k => $"'{k}'"))})";
                         var CatchmentFilter = new QueryFilter { WhereClause = catchmentClause };
-                        GroupLayerComboBox.msm_Catchment.Select(CatchmentFilter, SelectionCombinationMethod.Add);
+                        Layers.msm_Catchment.Select(CatchmentFilter, SelectionCombinationMethod.Add);
                     }
                     else
                     {
