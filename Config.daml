@@ -22,6 +22,7 @@
           <control refID="trace_network_SearchBox" />
           <control refID="trace_network_TraceUpstreamTool" />
           <control refID="trace_network_SummarizeCatchmentsButton" />
+		    <!--<control refID="trace_network_ConnectCatchment" />-->
           <control refID="trace_network_ReloadButton" size="Large" />
         </group>
       </groups>
@@ -31,6 +32,7 @@
         <comboBox id="trace_network_CatchmentLayerComboBox" className="CatchmentLayerComboBox" loadOnClick="true" caption="Catchment Layer" tooltip="Select a Catchment layer from the current map" group="trace_network_Group1" sizeString="JYL_061\Delopland" editable="true" />
         <comboBox id="trace_network_SearchBox" resizable="true" className="SearchBox" loadOnClick="true" caption="Search for Feature" isEditable="True" tooltip="Find feature based on MUID" group="trace_network_Group1" sizeString="JYL_061\Delopland" editable="true" />
         <button id="trace_network_SummarizeCatchmentsButton" className="SummarizeCatchmentsButton" loadOnClick="true" smallImage="Images\AddinCadastre16.png" largeImage="Images\AddinCadastre32.png" caption="Summarize Catchments" group="trace_network_Group1" showText="true" />
+		<button id="trace_network_ConnectCatchment" className="ConnectCatchment" loadOnClick="true" smallImage="Images\AddinCadastre16.png" largeImage="Images\AddinCadastre32.png" caption="Connect Catchment" group="trace_network_Group1" showText="true" />
         <button id="trace_network_HelpButton" className="HelpButton" loadOnClick="true" smallImage="Images\AddinInfo32.png" largeImage="Images/AddinInfo32.png" caption="Help" group="trace_network_Group1" showText="true" />
         <button id="trace_network_ReloadButton" className="ReloadButton" loadOnClick="true" smallImage="Images\reload.png" caption="Reload" group="trace_network_Group1" size="Large" showText="true" />
       </controls>

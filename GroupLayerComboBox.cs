@@ -98,13 +98,13 @@ namespace TraceNetwork
                     .ToList();
 
                 Layers.msm_Node = allLayers.FirstOrDefault(l =>
-                    NameMatch(l.Name, "msm_Node", "Manhole", "Brønd"));
+                    NameMatch(l.Name, "msm_Node", "Manhole", "Brønd", "Node"));
 
                 Layers.msm_Link = allLayers.FirstOrDefault(l =>
-                    NameMatch(l.Name, "msm_Link", "Ledning", "Pipe"));
+                    NameMatch(l.Name, "msm_Link", "Ledning", "Pipe", "Reach"));
 
                 Layers.msm_Catchment = allLayers.FirstOrDefault(l =>
-                    NameMatch(l.Name, "msm_Catchment", "ms_Catchent", "Delopland", "Catchment"));
+                    NameMatch(l.Name, "msm_Catchment", "ms_Catchment", "Delopland", "Catchment"));
 
                 Debug.WriteLine(Layers.msm_Node != null
                     ? $"✅ Found msm_Node: {Layers.msm_Node.Name}"
@@ -136,7 +136,7 @@ namespace TraceNetwork
         private static bool NameMatch(string name, params string[] targets)
         {
             return targets.Any(t =>
-                string.Equals(name, t, System.StringComparison.OrdinalIgnoreCase));
+                name.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         private List<Layer> FlattenGroupLayer(GroupLayer group)
