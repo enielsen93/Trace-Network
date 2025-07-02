@@ -1,11 +1,11 @@
 ﻿<ArcGIS defaultAssembly="TraceNetwork.dll" defaultNamespace="TraceNetwork" xmlns="http://schemas.esri.com/DADF/Registry" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
-  <AddInInfo id="{9e722d5c-1c43-4b94-977f-fcf71ef17cd2}" version="1.1.1" desktopVersion="3.2.49743">
+  <AddInInfo id="{9e722d5c-1c43-4b94-977f-fcf71ef17cd2}" version="1.1.2" desktopVersion="3.2.49743">
     <Name>Trace Network</Name>
     <Description>Trace Network of MIKE Database</Description>
     <Image>Images\AddinTraceUpstream32.png</Image>
     <Author>ELNN</Author>
     <Company>Ramboll</Company>
-    <Date>6/24/2025 2:01:21 PM</Date>
+    <Date>02/07/2025 2:01:21 PM</Date>
     <Subject>Framework</Subject>
   </AddInInfo>
   <modules>
