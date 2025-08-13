@@ -8,7 +8,7 @@ using ArcGIS.Desktop.Framework.Contracts;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
 using ArcGIS.Desktop.Internal.Catalog;
 using ArcGIS.Desktop.Mapping;
-
+using ArcGIS.Desktop.Framework;
 
 namespace TraceNetwork
 {
@@ -18,6 +18,8 @@ namespace TraceNetwork
     /// </summary>
     internal class CatchmentLayerComboBox : ComboBox
     {
+        private bool _hasText = false;
+
         public static CatchmentLayerComboBox Current { get; private set; }
 
         public CatchmentLayerComboBox()
@@ -25,7 +27,7 @@ namespace TraceNetwork
             Current = this;
         }
         // Public accessor for the selected pair
-        public static (GroupLayer Group, FeatureLayer Feature) SelectedCatchment { get; private set; }
+        public static (GroupLayer Group, FeatureLayer Feature) SelectedCatchment { get;  set; }
         public static string CatchmentLayerCaption;
 
         // Helper container so we can store both in one item
@@ -90,7 +92,10 @@ namespace TraceNetwork
         {
             CatchmentLayerCaption = item.Text;
             if (SelectedItem is LayerPair lp)
+            {
                 SelectedCatchment = (lp.Group, lp.Feature);
+                FrameworkApplication.State.Activate("trace_network_CatchmentLayerComboBoxValid");
+            }
             else
                 SelectedCatchment = (null, null);
         }

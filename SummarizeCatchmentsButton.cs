@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
@@ -10,6 +11,7 @@ using ArcGIS.Core.CIM;
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Geometry;
 using ArcGIS.Desktop.Core;
+using ArcGIS.Desktop.Framework;
 using ArcGIS.Desktop.Framework.Contracts;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
 using ArcGIS.Desktop.Mapping;
@@ -22,183 +24,198 @@ namespace TraceNetwork
 {
     public class SummarizeCatchmentsButton : Button
     {
+        
         public static Dictionary<string, Catchment> Catchments { get; private set; }
+
         protected override async void OnClick()
         {
-            //var caption = CatchmentLayerComboBox.CatchmentLayerCaption;
-            var muids = new List<string>();
-            await QueuedTask.Run(() =>
+            try
             {
-                string caption = CatchmentLayerComboBox.Current.SelectedItem.ToString();
-                var map = MapView.Active?.Map;
+                ArcGIS.Desktop.Framework.FrameworkApplication.State.Activate("trace_network_CatchmentLayerComboBoxChanged");
 
-                bool found = false;
-                FeatureLayer selectedCatchments = null;
-
-                // Run inside QueuedTask for safety
-
-                foreach (var layer in map.Layers)
-                {
-                    if (found) break;
-                    string[] parts = caption.Split('\\');
-
-                    if (parts.Length == 2)
+                var muids = new List<string>();
+                await QueuedTask.Run(() =>
                     {
-                        if (layer is GroupLayer groupLayer)
+                        string caption = CatchmentLayerComboBox.Current.SelectedItem.ToString();
+                        var map = MapView.Active?.Map;
+
+                        bool found = false;
+                        FeatureLayer selectedCatchments = null;
+
+                        // Run inside QueuedTask for safety
+
+                        foreach (var layer in map.Layers)
                         {
-                            foreach (var subLayer in groupLayer.Layers.OfType<FeatureLayer>())
+                            if (found) break;
+                            string[] parts = caption.Split('\\');
+
+                            if (parts.Length == 2)
                             {
-                                if (groupLayer.Name == parts[0] && subLayer.Name == parts[1])
+                                if (layer is GroupLayer groupLayer)
                                 {
-                                    selectedCatchments = subLayer;
+                                    foreach (var subLayer in groupLayer.Layers.OfType<FeatureLayer>())
+                                    {
+                                        if (groupLayer.Name == parts[0] && subLayer.Name == parts[1])
+                                        {
+                                            selectedCatchments = subLayer;
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else if (parts.Length == 1)
+                            {
+                                if (layer is FeatureLayer featureLayer &&
+                            featureLayer.ShapeType == esriGeometryType.esriGeometryPolygon &&
+                            layer.Name == parts[0])
+                                {
+                                    selectedCatchments = featureLayer;
                                     found = true;
                                     break;
                                 }
                             }
                         }
-                    }
-                    else if (parts.Length == 1)
-                    {
-                        if (layer is FeatureLayer featureLayer &&
-                            featureLayer.ShapeType == esriGeometryType.esriGeometryPolygon &&
-                            layer.Name == parts[0])
+
+
+                        Catchments = new Dictionary<string, Catchment>();
+                        Dictionary<string, HPara> HParATable = new Dictionary<string, HPara>();
+
+                        if (selectedCatchments != null)
                         {
-                            selectedCatchments = featureLayer;
-                            found = true;
-                            break;
-                        }
-                    }
-                }
+                            var dataConn = selectedCatchments.GetDataConnection() as CIMSqlQueryDataConnection;
+                            string dbPath = null;
 
-
-                Catchments = new Dictionary<string, Catchment>();
-                Dictionary<string, HPara> HParATable = new Dictionary<string, HPara>();
-
-                if (selectedCatchments != null)
-                {
-                    var dataConn = selectedCatchments.GetDataConnection() as CIMSqlQueryDataConnection;
-                    string dbPath = null;
-
-                    var parts = dataConn.WorkspaceConnectionString
+                            var parts = dataConn.WorkspaceConnectionString
                         .Split(';')
                         .Select(part => part.Split('='))
                         .Where(p => p.Length == 2 && p[0].Equals("DATABASE", StringComparison.OrdinalIgnoreCase))
                         .ToList();
 
-                    if (parts.Count > 0)
-                        dbPath = parts[0][1];
+                            if (parts.Count > 0)
+                                dbPath = parts[0][1];
 
-                    SqlitePath = dbPath;
-                    Debug.WriteLine($"SQLite file path: {dbPath}");
+                            SqlitePath = dbPath;
+                            Debug.WriteLine($"SQLite file path: {dbPath}");
 
-                    // Read HparA
-                    string connString = $"Data Source={dbPath};";
-                    SQLitePCL.Batteries_V2.Init();
-                    {
-                        using var conn = new SqliteConnection(connString);
-                        conn.Open();
-
-                        var cmd = conn.CreateCommand();
-                        cmd.CommandText = "SELECT MUID, REDFACTOR, CONCTIME FROM msm_HParA;";
-                        using var reader = cmd.ExecuteReader();
-
-                        while (reader.Read())
-                        {
-                            var id = reader.GetString(0);
-                            HParATable[id] = new HPara() { Muid = id };
-                            HParATable[id].Redfactor = reader.GetDouble(1);
-                            HParATable[id].Conctime = reader.GetDouble(2);
-                        }
-                    }
-
-
-
-                    // Read msm_Catchments
-                    var selectedIDs = selectedCatchments.GetSelection().GetObjectIDs().ToList();
-;
-                    using (var catchmentCursor = selectedCatchments.Search(null))
-                    {
-                        while (catchmentCursor.MoveNext())
-                        {
-                            using (var row = (Feature)catchmentCursor.Current)
+                            // Read HparA
+                            string connString = $"Data Source={dbPath};Mode=ReadOnly;";
+                            SQLitePCL.Batteries_V2.Init();
                             {
-                                var id = row["muid"]?.ToString();
-                                if (selectedIDs.Contains(row.GetObjectID()))
+                                using var conn = new SqliteConnection(connString);
+                                conn.Open();
+
+                                var cmd = conn.CreateCommand();
+                                cmd.CommandText = "SELECT MUID, REDFACTOR, CONCTIME FROM msm_HParA;";
+                                using var reader = cmd.ExecuteReader();
+
+                                while (reader.Read())
                                 {
-                                    Catchments[id] = new Catchment() { Muid = id };
+                                    var id = reader.GetString(0);
+                                    HParATable[id] = new HPara() { Muid = id };
+                                    HParATable[id].Redfactor = reader.GetDouble(1);
+                                    HParATable[id].Conctime = reader.GetDouble(2);
+                                }
+                            }
 
-                                    var geometry = row.GetShape() as Polygon; // Or appropriate geometry type
-                                    double geometry_area = geometry?.Area ?? 0;
 
-                                    // Calculate area in map units (e.g. square meters)
-                                    float area = (row["area"] != DBNull.Value && row["area"] != null)
+
+                            // Read msm_Catchments
+                            var selectedIDs = selectedCatchments.GetSelection().GetObjectIDs().ToList();
+                            ;
+                            using (var catchmentCursor = selectedCatchments.Search(null))
+                            {
+                                while (catchmentCursor.MoveNext())
+                                {
+                                    using (var row = (Feature)catchmentCursor.Current)
+                                    {
+                                        var id = row["muid"]?.ToString();
+                                        if (selectedIDs.Contains(row.GetObjectID()))
+                                        {
+                                            Catchments[id] = new Catchment() { Muid = id };
+
+                                            var geometry = row.GetShape() as Polygon; // Or appropriate geometry type
+                                            double geometry_area = geometry?.Area ?? 0;
+
+                                            // Calculate area in map units (e.g. square meters)
+                                            float area = (row["area"] != DBNull.Value && row["area"] != null)
                                         ? Convert.ToSingle(row["area"])
                                         : (float)geometry_area;
 
-                                    Catchments[id].Area = area;
-                                    Catchments[id].Persons = Convert.IsDBNull(row["Persons"]) ? 0.0 : Convert.ToDouble(row["Persons"]);
-                                    Catchments[id].Imperviousness = (double)row["modelaimparea"] * 100;
-                                    Catchments[id].UseLocalParameters = Convert.ToInt32(row["modelalocalno"]) == 2;
-                                    if (Catchments[id].UseLocalParameters)
-                                    {
-                                        Catchments[id].ConcentrationTime = (double)row["modelaconctime"];
-                                        Catchments[id].ReductionFactor = (double)row["modelarfactor"];
-                                    }
-                                    else
-                                    {
-                                        Catchments[id].Modelaparaid = (string)row["modelaparaid"];
-                                        Catchments[id].ConcentrationTime = HParATable[Catchments[id].Modelaparaid].Conctime;
-                                        Catchments[id].ReductionFactor = HParATable[Catchments[id].Modelaparaid].Redfactor;
+                                            Catchments[id].Area = area;
+                                            Catchments[id].Persons = Convert.IsDBNull(row["Persons"]) ? 0.0 : Convert.ToDouble(row["Persons"]);
+                                            Catchments[id].Imperviousness = (double)row["modelaimparea"] * 100;
+                                            Catchments[id].UseLocalParameters = Convert.ToInt32(row["modelalocalno"]) == 2;
+                                            if (Catchments[id].UseLocalParameters)
+                                            {
+                                                Catchments[id].ConcentrationTime = (double)row["modelaconctime"];
+                                                Catchments[id].ReductionFactor = (double)row["modelarfactor"];
+                                            }
+                                            else
+                                            {
+                                                Catchments[id].Modelaparaid = (string)row["modelaparaid"];
+                                                Catchments[id].ConcentrationTime = HParATable[Catchments[id].Modelaparaid].Conctime;
+                                                Catchments[id].ReductionFactor = HParATable[Catchments[id].Modelaparaid].Redfactor;
+                                            }
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    // Read CatchCon
-                    SQLitePCL.Batteries_V2.Init();
-
-                    {
-                        using var conn = new SqliteConnection(connString);
-                        conn.Open();
-
-                        var cmd = conn.CreateCommand();
-                        cmd.CommandText = "SELECT CATCHID, NODEID FROM msm_CatchCon;";
-                        using var reader = cmd.ExecuteReader();
-
-                        while (reader.Read())
-                        {
-                            var id = reader.GetString(0);
-                            var nodeid = reader.GetString(1);
-                            if (Catchments.ContainsKey(id))
+                            // Read CatchCon
                             {
-                                if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(nodeid))
-                                    Catchments[id].NodeId = nodeid;
+                                using var conn = new SqliteConnection(connString);
+                                conn.Open();
+
+                                var cmd = conn.CreateCommand();
+                                cmd.CommandText = "SELECT CATCHID, NODEID FROM msm_CatchCon;";
+                                using var reader = cmd.ExecuteReader();
+
+                                while (reader.Read())
+                                {
+                                    var id = reader.GetString(0);
+                                    var nodeid = reader.GetString(1);
+                                    if (Catchments.ContainsKey(id))
+                                    {
+                                        if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(nodeid))
+                                            Catchments[id].NodeId = nodeid;
+                                    }
+
+                                }
                             }
-
                         }
+
+                        double totalArea = 0;
+                        double totalImpervious = 0;
+                        double totalReduced = 0;
+                        long catchmentsCount = 0;
+
+                        foreach (var catchment in Catchments.Values)
+                        {
+                            catchmentsCount++;
+                            totalArea += catchment.Area;
+                            totalImpervious += catchment.GetImperviousArea();
+                            totalReduced += catchment.GetReducedArea();
+                        }
+
+                        Debug.WriteLine($"Catchments: {catchmentsCount}");
+                        Debug.WriteLine($"Total Area: {totalArea / 1e4}");
+                        Debug.WriteLine($"Total Impervious Area: {totalImpervious / 1e4}");
+                        Debug.WriteLine($"Total Reduced Area: {totalReduced / 1e4}");
+                        var impervious_perc = totalImpervious / totalArea * 100;
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+
+                
+                    MessageBox.Show($"Total area: {totalArea / 1e4:N2} ha\nImpervious: {totalImpervious / 1e4:N2} ha ({impervious_perc:N0}%)\nReduced: {totalReduced / 1e4:N2} ha",
+                    $"{catchmentsCount} selected"));
                     }
-                }
 
-                double totalArea = 0;
-                double totalImpervious = 0;
-                double totalReduced = 0;
-
-                foreach (var catchment in Catchments.Values)
-                {
-                    totalArea += catchment.Area;
-                    totalImpervious += catchment.GetImperviousArea();
-                    totalReduced += catchment.GetReducedArea();
-                }
-
-                Debug.WriteLine($"Total Area: {totalArea / 1e4}");
-                Debug.WriteLine($"Total Impervious Area: {totalImpervious / 1e4}");
-                Debug.WriteLine($"Total Reduced Area: {totalReduced / 1e4}");
-                var impervious_perc = totalImpervious / totalArea * 100;
-                MessageBox.Show($"Total area: {totalArea / 1e4:N2} ha\nImpervious: {totalImpervious / 1e4:N2} ha ({impervious_perc:N0}%)\nReduced: {totalReduced / 1e4:N2} ha",
-                    "Catchment Summary");
+                );
             }
-        );
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error");
+            }
         }
 
 

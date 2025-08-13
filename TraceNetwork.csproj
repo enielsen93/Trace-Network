@@ -11,7 +11,13 @@
   <ItemGroup>
     <None Remove="Images\AddinCadastre16.png" />
     <None Remove="Images\AddinCadastre32.png" />
+    <None Remove="Images\AddinConnectCatchment.png" />
+    <None Remove="Images\AddinConnectCatchment16.png" />
+    <None Remove="Images\AddinConnectCatchment32 - Copy.png" />
+    <None Remove="Images\AddinConnectCatchment32.png" />
     <None Remove="Images\AddinInfo32.png" />
+    <None Remove="Images\AddinShowDisconnected32.png" />
+    <None Remove="Images\AddinTraceBetween32.png" />
     <None Remove="Images\AddinTraceUpstream16.png" />
     <None Remove="Images\AddinTraceUpstream32.png" />
     <None Remove="Images\AddinTraceUpstreamSmall.png" />
@@ -20,7 +26,11 @@
   <ItemGroup>
     <Content Include="Images\AddinCadastre16.png" />
     <Content Include="Images\AddinCadastre32.png" />
+    <Content Include="Images\AddinConnectCatchment.png" />
+    <Content Include="Images\AddinConnectCatchment16.png" />
     <Content Include="Images\AddinInfo32.png" />
+    <Content Include="Images\AddinShowDisconnected32.png" />
+    <Content Include="Images\AddinTraceBetween32.png" />
     <Content Include="Images\AddinTraceUpstreamSmall.png" />
   </ItemGroup>
   <ItemGroup>
@@ -31,10 +41,6 @@
     <Content Include="DarkImages\AddInDesktop32.png" />
     <Content Include="Images\AddinTraceUpstream32.png" />
     <Content Include="Images\reload.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.5" />
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.5" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ArcGIS.Desktop.Framework">
@@ -107,6 +113,13 @@
       <CopyLocal>False</CopyLocal>
       <Private>False</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Images\AddinConnectCatchment32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.8" />
   </ItemGroup>
   <Import Project="C:\Program Files\ArcGIS\Pro\bin\Esri.ProApp.SDK.Desktop.targets" Condition="Exists('C:\Program Files\ArcGIS\Pro\bin\Esri.ProApp.SDK.Desktop.targets') AND !Exists('Esri.ArcGISPro.Extensions.targets')" />
 </Project>

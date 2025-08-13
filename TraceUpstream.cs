@@ -17,12 +17,13 @@ namespace TraceNetwork
 {
     internal class TraceUpstreamTool : MapTool
     {
-
+        public static TraceUpstreamTool Current { get; private set; }
         public TraceUpstreamTool()
         {
             IsSketchTool = true;  // important: this means we respond to map clicks
             SketchType = SketchGeometryType.Point;
             SketchOutputMode = SketchOutputMode.Map;
+            Current = this;
         }
 
         protected override Task<bool> OnSketchCompleteAsync(Geometry geometry)

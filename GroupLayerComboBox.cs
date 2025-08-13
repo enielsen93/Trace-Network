@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -121,12 +121,14 @@ namespace TraceNetwork
                 if (Layers.msm_Catchment != null && CatchmentLayerComboBox.Current.SelectedItem == null)
                 {
                     CatchmentLayerComboBox.Current.SelectedItem = selectedGroup.Name + "\\" + Layers.msm_Catchment.Name;
+                    CatchmentLayerComboBox.SelectedCatchment = (selectedGroup, Layers.msm_Catchment);
+                    FrameworkApplication.State.Activate("trace_network_CatchmentLayerComboBoxValid");
                     //CatchmentLayerComboBox.CatchmentLayerCaption = selectedGroup.Name + "\\" + Layers.msm_Catchment.Name;
-
-
                 }
-                NetworkService.BuildNetwork(Layers.msm_Node, Layers.msm_Link, Layers.msm_Catchment);
 
+                NetworkService.BuildNetwork(Layers.msm_Node, Layers.msm_Link, Layers.msm_Catchment);
+                FrameworkApplication.State.Activate("trace_network_TraceNetworkValid");
+                //TraceUpstreamTool.Current.Enabled = true;
                 SearchBox.Current.Enabled = true;
 
 
@@ -201,12 +203,15 @@ namespace TraceNetwork.Network
         public Polyline Geometry { get; }
         public Node From { get; set; }
         public Node To { get; set; }
+        public string Id { get; }
 
-        public Link(string fromId, string toId, Polyline geom)
+        public Link(string id, string fromId, string toId, Polyline geom)
         {
             FromId = fromId;
             ToId = toId;
             Geometry = geom;
+            Id = id;
+            
         }
     }
 

@@ -1,16 +1,14 @@
 ﻿using System;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using ArcGIS.Core.CIM;
 using ArcGIS.Core.Data;
-using ArcGIS.Core.Data;
 using ArcGIS.Core.Data.PluginDatastore;
 using ArcGIS.Core.Geometry;
 using ArcGIS.Desktop.Core;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
-using ArcGIS.Desktop.Mapping;  // for FeatureLayer
+using ArcGIS.Desktop.Mapping; 
 using Microsoft.Data.Sqlite;
 using SQLitePCL;
 
@@ -45,43 +43,33 @@ namespace TraceNetwork.Network
             if (msm_Catchment != null)
             {
                 CatchmentTable = msm_Catchment.GetTable();
-                var dataConn = msm_Catchment.GetDataConnection() as CIMSqlQueryDataConnection;
+                var dataConn = msm_Catchment.GetDataConnection();
+
                 string dbPath = null;
 
-                var parts = dataConn.WorkspaceConnectionString
-                    .Split(';')
-                    .Select(part => part.Split('='))
-                    .Where(p => p.Length == 2 && p[0].Equals("DATABASE", StringComparison.OrdinalIgnoreCase))
-                    .ToList();
+                if (dataConn != null)
+                {
+                    var conString = (string)dataConn.GetType().GetProperty("WorkspaceConnectionString")?.GetValue(dataConn);
 
-                if (parts.Count > 0)
-                    dbPath = parts[0][1];
+                    if (!string.IsNullOrEmpty(conString))
+                    {
+                        var parts = conString
+                            .Split(';')
+                            .Select(part => part.Split('='))
+                            .Where(p => p.Length == 2 && p[0].Equals("DATABASE", StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+                        if (parts.Count > 0)
+                        {
+                            dbPath = parts[0][1];
+                        }
+                    }
+                }
 
                 SqlitePath = dbPath;
                 Debug.WriteLine($"SQLite file path: {dbPath}");
 
-                // Read HparA
-                string connString = $"Data Source={dbPath};";
-                SQLitePCL.Batteries_V2.Init();
-                {
-                    using var conn = new SqliteConnection(connString);
-                    conn.Open();
-
-                    var cmd = conn.CreateCommand();
-                    cmd.CommandText = "SELECT MUID, REDFACTOR, CONCTIME FROM msm_HParA;";
-                    using var reader = cmd.ExecuteReader();
-
-                    while (reader.Read())
-                    {
-                        var id = reader.GetString(0);
-                        HParATable[id] = new HPara() { Muid = id };
-                        HParATable[id].Redfactor = reader.GetDouble(1);
-                        HParATable[id].Conctime = reader.GetDouble(2);
-                    }
-                }
-
-
-
+                string connString = $"Data Source={dbPath};Mode=ReadOnly;";
                 // Read msm_Catchments
                 using (var catchmentCursor = CatchmentTable.Search(null, false))
                 {
@@ -91,30 +79,6 @@ namespace TraceNetwork.Network
                         {
                             var id = row["muid"]?.ToString();
                             Catchments[id] = new Catchment() { Muid = id };
-
-                            var geometry = row.GetShape() as Polygon; // Or appropriate geometry type
-                            double geometry_area = geometry?.Area ?? 0;
-
-                            // Calculate area in map units (e.g. square meters)
-                            float area = (row["area"] != DBNull.Value && row["area"] != null)
-                                ? Convert.ToSingle(row["area"])
-                                : (float)geometry_area;
-
-                            Catchments[id].Area = area;
-                            Catchments[id].Persons = Convert.IsDBNull(row["Persons"]) ? 0.0 : Convert.ToDouble(row["Persons"]);
-                            Catchments[id].Imperviousness = (double)row["modelaimparea"] * 100;
-                            Catchments[id].UseLocalParameters = Convert.ToInt32(row["modelalocalno"]) == 1;
-                            if (Catchments[id].UseLocalParameters)
-                            {
-                                Catchments[id].ConcentrationTime = (double)row["modelaconctime"];
-                                Catchments[id].ReductionFactor = (double)row["modelarfactor"];
-                            }
-                            else
-                            {
-                                Catchments[id].Modelaparaid = (string)row["modelaparaid"];
-                                Catchments[id].ConcentrationTime = HParATable[Catchments[id].Modelaparaid].Conctime;
-                                Catchments[id].ReductionFactor = HParATable[Catchments[id].Modelaparaid].Redfactor;
-                            }
                         }
                     }
                 }
@@ -209,6 +173,7 @@ namespace TraceNetwork.Network
                     {
                         using (var row = linkCursor.Current)
                         {
+                            var id = row["muid"]?.ToString();
                             var fromId = row[FromNodeField]?.ToString();
                             var toId = row[ToNodeField]?.ToString();
                             var geom = row[geometryField] as Polyline;
@@ -217,10 +182,10 @@ namespace TraceNetwork.Network
                                 && Nodes.TryGetValue(fromId, out var fromNode)
                                 && Nodes.TryGetValue(toId, out var toNode))
                             {
-                                var link = new Link(fromId, toId, geom)
+                                var link = new Link(id, fromId, toId, geom)
                                 {
                                     From = fromNode,
-                                    To = toNode
+                                    To = toNode,
                                 };
                                 fromNode.Outgoing.Add(link);
                                 toNode.Incoming.Add(link);
@@ -289,6 +254,71 @@ namespace TraceNetwork.Network
 
             return result;
         }
+
+        public static (List<Node> Nodes, List<Link> Links) TraceBetween(Node start, Node end)
+        {
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var queue = new Queue<Node>();
+            var cameFrom = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            queue.Enqueue(start);
+            visited.Add(start.Id);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+
+                if (current.Id.Equals(end.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    var nodePath = new List<Node> { current };
+                    while (cameFrom.TryGetValue(current.Id, out var prevId))
+                    {
+                        current = NetworkService.Nodes[prevId];
+                        nodePath.Add(current);
+                    }
+
+                    nodePath.Reverse();
+
+                    var linkPath = new List<Link>();
+                    for (int i = 0; i < nodePath.Count - 1; i++)
+                    {
+                        var from = nodePath[i];
+                        var to = nodePath[i + 1];
+                        var link = from.Outgoing
+                                    .Concat(from.Incoming)
+                                    .FirstOrDefault(l =>
+                                        (l.From?.Id.Equals(from.Id, StringComparison.OrdinalIgnoreCase) == true &&
+                                         l.To?.Id.Equals(to.Id, StringComparison.OrdinalIgnoreCase) == true) ||
+                                        (l.To?.Id.Equals(from.Id, StringComparison.OrdinalIgnoreCase) == true &&
+                                         l.From?.Id.Equals(to.Id, StringComparison.OrdinalIgnoreCase) == true));
+
+                        if (link != null)
+                            linkPath.Add(link);
+                        else
+                            throw new Exception($"No link found between {from.Id} and {to.Id}");
+                    }
+
+                    return (nodePath, linkPath);
+                }
+
+                foreach (var link in current.Outgoing.Concat(current.Incoming))
+                {
+                    var neighbor = link.From == current ? link.To : link.From;
+
+                    if (neighbor != null && visited.Add(neighbor.Id))
+                    {
+                        cameFrom[neighbor.Id] = current.Id;
+                        queue.Enqueue(neighbor);
+                    }
+                }
+            }
+
+            return (new List<Node>(), new List<Link>());
+        }
+
+
+
+
         public static Node FindNearestNode(MapPoint clickPoint, double maxDistance = 10.0)
         {
             Node nearest = null;
