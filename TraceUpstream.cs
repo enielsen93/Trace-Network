@@ -11,6 +11,7 @@ using ArcGIS.Desktop.Mapping;
 using Microsoft.Data.Sqlite;
 using ArcGIS.Desktop.Framework;
 using TraceNetwork.Network;
+using System.Windows.Input;
 
 
 namespace TraceNetwork
@@ -28,8 +29,12 @@ namespace TraceNetwork
 
         protected override Task<bool> OnSketchCompleteAsync(Geometry geometry)
         {
+            // Detect whether Ctrl is held at the time of the click so we can
+            // choose between adding to or removing from the current selection.
+            var ctrlPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
             return QueuedTask.Run(() =>
             {
+                var selectionMethod = ctrlPressed ? SelectionCombinationMethod.Subtract : SelectionCombinationMethod.Add;
                 if (geometry is MapPoint point)
                 {
                     var nearest = NetworkService.FindNearestNode(point, 20);
@@ -43,7 +48,7 @@ namespace TraceNetwork
                     Debug.WriteLine($"Found {upstream.Count} upstream nodes from {nearest.Id}");
                     var whereClause = $"MUID IN ({string.Join(",", upstream.Select(n => $"'{n.Id}'"))})";
                     var filter = new QueryFilter { WhereClause = whereClause };
-                    Layers.msm_Node.Select(filter, SelectionCombinationMethod.Add);
+                    Layers.msm_Node.Select(filter, selectionMethod);
 
                     // Select links where fromNode or toNode is in the upstream set
                     var upstreamNodeIds = upstream.Select(n => n.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -57,7 +62,7 @@ namespace TraceNetwork
                     {
                         var linkClause = $"{NetworkService.ToNodeField} IN ({string.Join(",", upstreamNodeIds.Select(id => $"'{id}'"))})";
                         var linkFilter = new QueryFilter { WhereClause = linkClause };
-                        Layers.msm_Link.Select(linkFilter, SelectionCombinationMethod.Add);
+                        Layers.msm_Link.Select(linkFilter, selectionMethod);
                     }
                     else
                     {
@@ -74,7 +79,7 @@ namespace TraceNetwork
                     {
                         var catchmentClause = $"MUID IN ({string.Join(", ", keys.Select(k => $"'{k}'"))})";
                         var CatchmentFilter = new QueryFilter { WhereClause = catchmentClause };
-                        Layers.msm_Catchment.Select(CatchmentFilter, SelectionCombinationMethod.Add);
+                        Layers.msm_Catchment.Select(CatchmentFilter, selectionMethod);
                     }
                     else
                     {

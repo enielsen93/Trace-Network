@@ -93,20 +93,30 @@ namespace TraceNetwork
 
                     var selectedIDs = selectedCatchments.GetSelection().GetObjectIDs().ToList();
 
+                    if (selectedIDs == null || selectedIDs.Count == 0)
+                    {
+                        MessageBox.Show("No catchments selected.", "Replace Catchment Connections");
+                        return false;
+                    }
 
                     List<string> selection = new List<string>();
 
-                    using (var catchmentCursor = selectedCatchments.Search(null))
+                    var qf = new QueryFilter
+                    {
+                        ObjectIDs = selectedIDs.ToArray(),
+                        SubFields = "muid",
+                    };
+
+                    using (var catchmentCursor = selectedCatchments.Search(qf))
                     {
                         while (catchmentCursor.MoveNext())
                         {
                             using (var row = (Feature)catchmentCursor.Current)
                             {
-                                var id = row["muid"]?.ToString();
-                                if (selectedIDs.Contains(row.GetObjectID()))
-                                {
-                                    selection.Add(row["muid"]?.ToString());
-                                }
+                                var muid = row["muid"]?.ToString();
+
+                                if (!string.IsNullOrEmpty(muid))
+                                    selection.Add(muid);
                             }
                         }
                     }

@@ -10,7 +10,6 @@ using ArcGIS.Desktop.Core;
 using ArcGIS.Desktop.Framework.Threading.Tasks;
 using ArcGIS.Desktop.Mapping; 
 using Microsoft.Data.Sqlite;
-using SQLitePCL;
 
 namespace TraceNetwork.Network
 {
@@ -25,6 +24,8 @@ namespace TraceNetwork.Network
         public static Table CatchmentTable { get; private set; }
 
         public static string SqlitePath = null;
+        // KD-tree for fast nearest-neighbor queries
+        private static KdTree _kdTree = null;
 
         /// <summary>
         /// Build the network graph from two already-loaded FeatureLayers.
@@ -66,7 +67,8 @@ namespace TraceNetwork.Network
                     }
                 }
 
-                SqlitePath = dbPath;
+                
+                var Path = dbPath;
                 Debug.WriteLine($"SQLite file path: {dbPath}");
 
                 string connString = $"Data Source={dbPath};Mode=ReadOnly;";
@@ -139,6 +141,11 @@ namespace TraceNetwork.Network
                                 Nodes[id] = new Node(id, geom);
                         }
                     }
+                }
+                // Build spatial index (KD-tree) for fast nearest-node queries
+                if (Nodes != null && Nodes.Count > 0)
+                {
+                    _kdTree = new KdTree(Nodes.Values);
                 }
             }
 
@@ -321,12 +328,24 @@ namespace TraceNetwork.Network
 
         public static Node FindNearestNode(MapPoint clickPoint, double maxDistance = 10.0)
         {
+            if (Nodes == null || Nodes.Count == 0)
+                return null;
+
+            // Use KD-tree if available
+            if (_kdTree != null)
+            {
+                return _kdTree.FindNearest(clickPoint, maxDistance);
+            }
+
+            // Fallback to linear scan if kd-tree not built
             Node nearest = null;
             double minDist = double.MaxValue;
 
             foreach (var node in Nodes.Values)
             {
-                double dist = GeometryEngine.Instance.Distance(clickPoint, node.Geometry);
+                double dx = clickPoint.X - node.Geometry.X;
+                double dy = clickPoint.Y - node.Geometry.Y;
+                double dist = Math.Sqrt(dx * dx + dy * dy);
                 if (dist < minDist && dist <= maxDistance)
                 {
                     minDist = dist;
@@ -335,6 +354,91 @@ namespace TraceNetwork.Network
             }
 
             return nearest;
+        }
+
+        // Simple balanced KD-tree for 2D points (stores Node references)
+        private class KdTree
+        {
+            private class KdNode
+            {
+                public Node Item;
+                public double X, Y;
+                public KdNode Left, Right;
+            }
+
+            private KdNode _root;
+
+            public KdTree(IEnumerable<Node> items)
+            {
+                var list = items.Where(n => n?.Geometry != null).Select(n => new KdNode
+                {
+                    Item = n,
+                    X = n.Geometry.X,
+                    Y = n.Geometry.Y
+                }).ToList();
+
+                _root = Build(list, depth: 0);
+            }
+
+            private KdNode Build(List<KdNode> list, int depth)
+            {
+                if (list == null || list.Count == 0)
+                    return null;
+
+                int axis = depth % 2; // 0 = x, 1 = y
+                if (axis == 0)
+                    list.Sort((a, b) => a.X.CompareTo(b.X));
+                else
+                    list.Sort((a, b) => a.Y.CompareTo(b.Y));
+
+                int mid = list.Count / 2;
+                var node = list[mid];
+
+                var leftList = list.GetRange(0, mid);
+                var rightList = list.GetRange(mid + 1, list.Count - mid - 1);
+
+                node.Left = Build(leftList, depth + 1);
+                node.Right = Build(rightList, depth + 1);
+
+                return node;
+            }
+
+            public Node FindNearest(MapPoint pt, double maxDistance)
+            {
+                double maxDistSq = maxDistance * maxDistance;
+                Node best = null;
+                double bestDistSq = double.MaxValue;
+
+                void Search(KdNode node, int depth)
+                {
+                    if (node == null) return;
+
+                    double dx = pt.X - node.X;
+                    double dy = pt.Y - node.Y;
+                    double distSq = dx * dx + dy * dy;
+
+                    if (distSq < bestDistSq && distSq <= maxDistSq)
+                    {
+                        bestDistSq = distSq;
+                        best = node.Item;
+                    }
+
+                    int axis = depth % 2;
+                    double delta = (axis == 0) ? dx : dy;
+
+                    KdNode first = delta <= 0 ? node.Left : node.Right;
+                    KdNode second = delta <= 0 ? node.Right : node.Left;
+
+                    if (first != null) Search(first, depth + 1);
+
+                    // Check whether we need to search the other side
+                    if (second != null && delta * delta <= Math.Min(bestDistSq, maxDistSq))
+                        Search(second, depth + 1);
+                }
+
+                Search(_root, 0);
+                return best;
+            }
         }
 
         public class Catchment

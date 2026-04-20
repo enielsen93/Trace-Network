@@ -1,20 +1,26 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36109.1
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11626.88
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceNetwork", "TraceNetwork.csproj", "{A87597D9-6004-4D12-A699-CF1F0007EB45}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A87597D9-6004-4D12-A699-CF1F0007EB45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A87597D9-6004-4D12-A699-CF1F0007EB45}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A87597D9-6004-4D12-A699-CF1F0007EB45}.Debug|x64.ActiveCfg = Release|x64
+		{A87597D9-6004-4D12-A699-CF1F0007EB45}.Debug|x64.Build.0 = Release|x64
 		{A87597D9-6004-4D12-A699-CF1F0007EB45}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A87597D9-6004-4D12-A699-CF1F0007EB45}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A87597D9-6004-4D12-A699-CF1F0007EB45}.Release|x64.ActiveCfg = Release|x64
+		{A87597D9-6004-4D12-A699-CF1F0007EB45}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
